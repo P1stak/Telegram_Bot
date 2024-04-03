@@ -16,6 +16,7 @@ namespace Telegram_Bot
     {
         private static TelegramBotClient botClient;
         static int count = 0;
+        static int quizStep = 0;
         static async Task Main(string[] args)
         {
             var token = System.IO.File.ReadAllText(@"../../TGToken.txt");
@@ -63,39 +64,95 @@ namespace Telegram_Bot
 
                     case "/quiz": //первая викторина
                         await botClient.SendTextMessageAsync(message.Chat.Id, "Начнем первую викторину!");
-                        await botClient.SendTextMessageAsync(message.Chat.Id, "Столица Бразилии?\n1) Москва, 2) Рио, 3) Бразилиа, 4) Сингапур");
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Первый вопрос:\nСтолица Бразилии?\n1) Москва, 2) Рио, 3) Бразилиа, 4) Сингапур"); //1
+                        quizStep = 1;
+                        break;
+
+
+                    case var text when quizStep == 1:
+                        if (text.StartsWith("3"))
+                        {
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Верно!");
+                            count++;
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Второй вопрос:\nКакой самый большой планетой в Солнечной системе?\n1) Земля, 2) Юпитер, 3) Марс, 4) Венера"); //2
+                            quizStep = 2;
+                        }
+                        else
+                        {
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Неверно!");
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Второй вопрос:\nКакой самый большой планетой в Солнечной системе?\n1) Земля, 2) Юпитер, 3) Марс, 4) Венера");
+                            quizStep = 2;
+                        }
+                        break;
+
+                    case var text when quizStep == 2:
+                        if (text.StartsWith("2"))
+                        {
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Верно!");
+                            count++;
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Третий вопрос:\nКакой самый высокий горой в мире?\n1) Килиманджаро, 2) Эверест, 3) Монблан, 4) Денали"); //3
+                            quizStep = 3;
+                        }
+                        else
+                        {
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Неверно!");
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Третий вопрос:\nКакой самый высокий горой в мире?\n1) Эверест, 2) Килиманджаро, 3) Монблан, 4) Денали");
+                            quizStep = 3;
+                        }
+                        break;
+
+                    case var text when quizStep == 3:
+                        if (text.StartsWith("2"))
+                        {
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Верно!");
+                            count++;
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Четверный вопрос:\nКакой химический элемент имеет атомный номер 1 ?\n1) Кислород, 2) Водород, 3) Гелий, 4) Углерод");
+                            quizStep = 4;
+                        }
+                        else
+                        {
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Неверно!");
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Четверный вопрос:\nКакой химический элемент имеет атомный номер 1 ?\n1) Кислород, 2) Водород, 3) Гелий, 4) Углерод");
+                            quizStep = 4;
+                        }
+                        break;
+
+                    case var text when quizStep == 4:
+                        if (text.StartsWith("2"))
+                        {
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Верно!");
+                            count++;
+                            await botClient.SendTextMessageAsync(message.Chat.Id, $"Викторина завершена. Количество правильных ответов {count}");
+                            quizStep = 5;
+                        }
+                        else
+                        {
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Неверно!");
+                            quizStep = 5;
+                            await botClient.SendTextMessageAsync(message.Chat.Id, $"Викторина завершена. Количество правильных ответов {count}");
+                        }
                         break;
                 }
-                
-            }
-            switch (message.Text)
-            {
-                case "3":
-                    count++;
-                    await botClient.SendTextMessageAsync(message.Chat.Id, "Правильно 1");
-                    await botClient.SendTextMessageAsync(message.Chat.Id, "Вторая викторина!");
-                    await botClient.SendTextMessageAsync(message.Chat.Id, "Где находится самая высокая гора России?\n1) Камчатка, 2) Урал, 3) Алтай, 4) Кавказ");
-                    message.Text = null;
-                    break;
-            }
-            switch (message.Text)
-            {
-                case "1":
-                    count++;
-                    await botClient.SendTextMessageAsync(message.Chat.Id, "Правильно 2");
-                    await botClient.SendTextMessageAsync(message.Chat.Id, "Третья викторина!");
-                    await botClient.SendTextMessageAsync(message.Chat.Id, "Какой самый большой планетой в Солнечной системе?\n 1) Земля, 2) Юрпитер, 3) Марс, 4) Венера");
-                    message.Text = null;
-                    break;
-            }
-            switch (message.Text)
-            {
-                case "2":
-                    count++;
-                    await botClient.SendTextMessageAsync(message.Chat.Id, "Правильно 3");
-                    message.Text = null;
-                    await botClient.SendTextMessageAsync(message.Chat.Id, $"Вы ответили на {count} вопросов");
-                    break;
+                if (message.Text.ToLower().Contains("/weather"))
+                {
+                    var ss = message.Text.Split();
+                    if (ss.Length > 1)
+                    {
+                        var w = WeatherApi(ss[1]);
+                        if (w.Result != "Ошибка при получении данных о погоде.")
+                        {
+                            await botClient.SendTextMessageAsync(message.Chat.Id, $"Ощущается как {w.Result}  ℃");
+                        }
+                        else
+                        {
+                            await botClient.SendTextMessageAsync(message.Chat.Id, w.Result);
+                        }
+                    }
+                    else
+                    {
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Введите название города для прогноза погоды.");
+                    }
+                }
 
             }
 
