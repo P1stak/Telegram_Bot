@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Diagnostics.Eventing.Reader;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -14,7 +15,7 @@ namespace Telegram_Bot
     internal class Program
     {
         private static TelegramBotClient botClient;
-        static bool isGameStart = false;
+        static int count = 0;
         static async Task Main(string[] args)
         {
             var token = System.IO.File.ReadAllText(@"../../TGToken.txt");
@@ -40,29 +41,18 @@ namespace Telegram_Bot
         {
             var message = update.Message;
 
-            //if (isGameStart == false)
-            //{
-            //    string[] phrases = System.IO.File.ReadAllLines(@"../../PatternError.txt");
-
-            //    Random random = new Random();
-            //    int index = random.Next(phrases.Length);
-            //    string randomPhrase = phrases[index];
-            //    await botClient.SendTextMessageAsync(message.Chat.Id, randomPhrase);
-            //} //ответы на не верные запросы
-
-
             if (message != null && message.Text != null)
             {
-                isGameStart = false;
 
                 Console.WriteLine("Логи");
                 Console.WriteLine($"{message.Chat.FirstName}    |    {message.Text}");
 
-                switch (message.Text.ToLower())
+                switch (message.Text)
                 {
 
                     case "привет":
-                        
+                    case "/start":
+
                         await botClient.SendTextMessageAsync(message.Chat.Id, "Здравствуйте! Я бот Александр, азвлекательный бот!");
                         await botClient.SendTextMessageAsync(message.Chat.Id, "Чтобы увидеть мой функционал => /help");
                         break;
@@ -71,81 +61,83 @@ namespace Telegram_Bot
                         await botClient.SendTextMessageAsync(message.Chat.Id, "\nДоступные команды:\n/quiz Викторина\n/weather Погода (Чтобы узнать погоду, допиши город)");
                         break;
 
-                    case "/quiz":
-                        await botClient.SendTextMessageAsync(message.Chat.Id, "Начнем викторину!");
-                        await botClient.SendTextMessageAsync(message.Chat.Id, "Столица Бразилии? Варианты ответов: 1) Москва, 2) Рио, 3) Бразилиа, 4) Сингапур");
-                        break;
-
-                    case "3":
-                        
-                        if (message.Text.ToLower().Contains("3"))
-                        {
-                            await botClient.SendTextMessageAsync(message.Chat.Id, "Верно!");
-                            await botClient.SendTextMessageAsync(message.Chat.Id, "Викторина завершена!");
-                            await botClient.SendTextMessageAsync(message.Chat.Id, "\nДоступные команды:\n/quiz Викторина\n/weather Погода (Чтобы узнать погоду, допиши город)");
-                            isGameStart = false;
-                            break;
-                        }
-                        else if(message.Text.ToLower().Contains("1") | message.Text.ToLower().Contains("2") | message.Text.ToLower().Contains("4"))
-                        {
-                            await botClient.SendTextMessageAsync(message.Chat.Id, "Не верно!!");
-                            return;
-                        }
+                    case "/quiz": //первая викторина
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Начнем первую викторину!");
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Столица Бразилии?\n1) Москва, 2) Рио, 3) Бразилиа, 4) Сингапур");
                         break;
                 }
+                
             }
-
-            // погода
-            if (message.Text.ToLower().Contains("/weather"))
+            switch (message.Text)
             {
-                var ss = message.Text.Split();
-                if (ss[1] != null)
-                {
-                    var w = WeatherApi(ss[1]);
-                    await botClient.SendTextMessageAsync(message.Chat.Id, "Ощущается как " + w.Result + " ℃");
-                }
-                else
-                {
-                    await botClient.SendTextMessageAsync(message.Chat.Id, "Error!");
-                }
+                case "3":
+                    count++;
+                    await botClient.SendTextMessageAsync(message.Chat.Id, "Правильно 1");
+                    await botClient.SendTextMessageAsync(message.Chat.Id, "Вторая викторина!");
+                    await botClient.SendTextMessageAsync(message.Chat.Id, "Где находится самая высокая гора России?\n1) Камчатка, 2) Урал, 3) Алтай, 4) Кавказ");
+                    message.Text = null;
+                    break;
             }
+            switch (message.Text)
+            {
+                case "1":
+                    count++;
+                    await botClient.SendTextMessageAsync(message.Chat.Id, "Правильно 2");
+                    await botClient.SendTextMessageAsync(message.Chat.Id, "Третья викторина!");
+                    await botClient.SendTextMessageAsync(message.Chat.Id, "Какой самый большой планетой в Солнечной системе?\n 1) Земля, 2) Юрпитер, 3) Марс, 4) Венера");
+                    message.Text = null;
+                    break;
+            }
+            switch (message.Text)
+            {
+                case "2":
+                    count++;
+                    await botClient.SendTextMessageAsync(message.Chat.Id, "Правильно 3");
+                    message.Text = null;
+                    await botClient.SendTextMessageAsync(message.Chat.Id, $"Вы ответили на {count} вопросов");
+                    break;
+
+            }
+
         }
         private static async Task<string> WeatherApi(string city)
-        {
-            string apiKey = "e59e576611bc9df0421b81d6f5daab2f"; // Замените YOUR_API_KEY на ваш API ключ
-            string url = $"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={apiKey}&units=metric&lang=ru";
-
-            var res = "Ошибка при получении данных о погоде.";
-
-            using (var client = new HttpClient())
             {
-                HttpResponseMessage response = await client.GetAsync(url);
+                string apiKey = "e59e576611bc9df0421b81d6f5daab2f"; // Замените YOUR_API_KEY на ваш API ключ
+                string url = $"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={apiKey}&units=metric&lang=ru";
 
-                if (response.IsSuccessStatusCode)
+                var res = "Ошибка при получении данных о погоде.";
+
+                using (var client = new HttpClient())
                 {
-                    var pattern = "feels_like.*?[,]";
-                    string json = await response.Content.ReadAsStringAsync();
-                    Match m = Regex.Match(json, pattern);
+                    HttpResponseMessage response = await client.GetAsync(url);
 
-                    var s = m.Value;
-                    Console.WriteLine(s.Replace("feels_like\":", "").Replace(",", ""));
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var pattern = "feels_like.*?[,]";
+                        string json = await response.Content.ReadAsStringAsync();
+                        Match m = Regex.Match(json, pattern);
 
-                    var FeelsLike = s.Replace("feels_like\":", "").Replace(",", "");
+                        var s = m.Value;
+                        Console.WriteLine(s.Replace("feels_like\":", "").Replace(",", ""));
 
-                    res = FeelsLike;
+                        var FeelsLike = s.Replace("feels_like\":", "").Replace(",", "");
+
+                        res = FeelsLike;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Ошибка при получении данных о погоде.");
+                    }
                 }
-                else
-                {
-                    Console.WriteLine("Ошибка при получении данных о погоде.");
-                }
-            }
-            return res;
-        } //api weather
+                return res;
+            } //api weather
 
         private static Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
-        {
-            Console.WriteLine("Сервер не работает!");
-            return Task.CompletedTask;
-        }
+            {
+                Console.WriteLine("Сервер не работает!");
+                return Task.CompletedTask;
+            }
+        
     }
 }
+ 
