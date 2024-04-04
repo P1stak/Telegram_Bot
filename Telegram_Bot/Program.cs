@@ -96,7 +96,7 @@ namespace Telegram_Bot
                         else
                         {
                             await botClient.SendTextMessageAsync(message.Chat.Id, "Неверно!");
-                            await botClient.SendTextMessageAsync(message.Chat.Id, "Третий вопрос:\nКакой самый высокий горой в мире?\n1) Эверест, 2) Килиманджаро, 3) Монблан, 4) Денали");
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Третий вопрос:\nКакой самый высокий горой в мире?\n1) Килиманджаро, 2) Эверест, 3) Монблан, 4) Денали");
                             quizStep = 3;
                         }
                         break;
@@ -124,12 +124,14 @@ namespace Telegram_Bot
                             count++;
                             await botClient.SendTextMessageAsync(message.Chat.Id, $"Викторина завершена. Количество правильных ответов {count}");
                             quizStep = 5;
+                            count = 0;
                         }
                         else
                         {
                             await botClient.SendTextMessageAsync(message.Chat.Id, "Неверно!");
                             quizStep = 5;
                             await botClient.SendTextMessageAsync(message.Chat.Id, $"Викторина завершена. Количество правильных ответов {count}");
+                            count = 0;
                         }
                         break;
                 }
@@ -150,7 +152,7 @@ namespace Telegram_Bot
                     }
                     else
                     {
-                        await botClient.SendTextMessageAsync(message.Chat.Id, "Введите название города для прогноза погоды.");
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Введите /weather + название города для прогноза погоды.");
                     }
                 }
 
