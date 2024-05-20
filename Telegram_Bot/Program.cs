@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.Eventing.Reader;
 using System.Net.Http;
@@ -9,11 +11,14 @@ using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Telegram_Bot
 {
     internal class Program
     {
+        static readonly HttpClient client = new HttpClient();
         private static TelegramBotClient botClient;
         static int count = 0;
         static int quizStep = 0;
@@ -37,7 +42,7 @@ namespace Telegram_Bot
             Console.ReadLine();
 
         }
-
+        //викторина
         private static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
             var message = update.Message;
@@ -135,6 +140,7 @@ namespace Telegram_Bot
                         }
                         break;
                 }
+
                 if (message.Text.ToLower().Contains("/weather"))
                 {
                     var ss = message.Text.Split();
@@ -156,9 +162,49 @@ namespace Telegram_Bot
                     }
                 }
 
+                if (message.Text.ToLower().Contains("/menu"))
+                {
+                    var menu = await GetMenuAsync();
+                    if (menu != null)
+                    {
+                        await botClient.SendTextMessageAsync(message.Chat.Id, FormatMenu(menu));
+                    }
+                    else
+                    {
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Ошибка!");
+                    }
+                }
             }
 
         }
+
+        //запрос меню
+        static async Task<JArray> GetMenuAsync()
+        {
+            var response = await client.GetStringAsync("http://localhost:8080/api/menu");
+            if (!string.IsNullOrEmpty(response))
+            {
+                return JArray.Parse(response);
+            }
+
+            return null;
+        }
+        //Приведение ответа из Json формата к строке
+        static string FormatMenu(JArray menu)
+        {
+            var result = new System.Text.StringBuilder();
+            foreach (var item in menu)
+            {
+                var name = (string)item["name"];
+                var price = (decimal)item["price"];
+
+                result.AppendLine($"{name} - {price:C}");
+            }
+            return result.ToString();
+        }
+
+
+        //погода
         private static async Task<string> WeatherApi(string city)
             {
                 string apiKey = "e59e576611bc9df0421b81d6f5daab2f"; // Замените YOUR_API_KEY на ваш API ключ
@@ -189,7 +235,9 @@ namespace Telegram_Bot
                     }
                 }
                 return res;
-            } //api weather
+            }
+
+        
 
         private static Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
             {
